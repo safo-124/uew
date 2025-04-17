@@ -1,0 +1,121 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  REGISTRY
+  COORDINATOR
+  LECTURER
+}
+
+enum ClaimType {
+  TEACHING
+  THESIS
+}
+
+enum ClaimStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSED
+}
+
+enum TransportMode {
+  PUBLIC
+  PRIVATE
+}
+
+enum ThesisType {
+  SUPERVISION
+  EXAMINATION
+}
+
+enum Degree {
+  PhD
+  MPHIL
+  MA
+  ED
+  PGDE
+}
+
+model User {
+  id            String    @id @default(uuid()) @db.Char(36)
+  email         String    @unique
+  password      String
+  name          String
+  role          Role      @default(LECTURER)
+  department    String?
+  title         String?
+  center        String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  claims        Claim[]   @relation("SubmittedClaims")
+  createdUsers  User[]    @relation("CreatedUsers")
+  createdBy     User?     @relation("CreatedUsers", fields: [createdById], references: [id])
+  createdById   String?   @db.Char(36)
+
+  approvedClaims  Claim[] @relation("ApprovedClaims")
+  processedClaims Claim[] @relation("ProcessedClaims")
+  toApproveClaims Claim[] @relation("ClaimsToApprove")
+}
+
+model Claim {
+  id                 String       @id @default(uuid()) @db.Char(36)
+  claimId            String       @unique
+  claimType          ClaimType
+  status             ClaimStatus  @default(PENDING)
+
+  submittedBy        User         @relation("SubmittedClaims", fields: [submittedById], references: [id])
+  submittedById      String       @db.Char(36)
+
+  department         String
+  courseCode         String
+  date               DateTime
+
+  // Teaching claim specific
+  contactHours       Int?
+  startTime          String?
+  endTime            String?
+  isTransportation   Boolean      @default(false)
+  transportMode      TransportMode?
+  registrationNumber String?
+  cubicCapacity      Int?
+  from               String?
+  to                 String?
+  distance           Float?
+
+  // Thesis claim specific
+  thesisType         ThesisType?
+  degree             Degree?
+
+  // Approval tracking
+  currentApprover    User?        @relation("ClaimsToApprove", fields: [currentApproverId], references: [id])
+  currentApproverId  String?      @db.Char(36)
+
+  approvedBy         User?        @relation("ApprovedClaims", fields: [approvedById], references: [id])
+  approvedById       String?      @db.Char(36)
+
+  processedBy        User?        @relation("ProcessedClaims", fields: [processedById], references: [id])
+  processedById      String?      @db.Char(36)
+
+  students           StudentData[]
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+}
+
+model StudentData {
+  id            String   @id @default(uuid()) @db.Char(36)
+  claim         Claim    @relation(fields: [claimId], references: [id])
+  claimId       String   @db.Char(36)
+
+  studentNumber String
+  studentName   String
+  thesisTitle   String
+}

@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE `User` ADD COLUMN `center` VARCHAR(191) NULL,
+    ADD COLUMN `department` VARCHAR(191) NULL,
+    ADD COLUMN `title` VARCHAR(191) NULL;
